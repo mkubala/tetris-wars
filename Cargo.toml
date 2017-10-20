@@ -2,5 +2,8 @@
 name = "tetris-wars"
 version = "0.1.0"
 authors = ["Marcin Kubala <marcin@mkubala.pl>"]
+repository = "https://github.com/mkubala/tetris-wars"
+license = "MIT"
+travis-ci = { repository = "mkubala/tetris-wars", branch = "master" }
 
 [dependencies]
