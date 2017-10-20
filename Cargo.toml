@@ -1,0 +1,6 @@
+[package]
+name = "tetris-wars"
+version = "0.1.0"
+authors = ["Marcin Kubala <marcin@mkubala.pl>"]
+
+[dependencies]
