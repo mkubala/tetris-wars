@@ -1,5 +1,5 @@
 [package]
-name = "tetris-wars"
+name = "tetris_wars"
 version = "0.1.0"
 authors = ["Marcin Kubala <marcin@mkubala.pl>"]
 repository = "https://github.com/mkubala/tetris-wars"
@@ -7,3 +7,8 @@ license = "MIT"
 travis-ci = { repository = "mkubala/tetris-wars", branch = "master" }
 
 [dependencies]
+piston_window = "0.73.0"
+piston2d-gfx_graphics = "0.46.0"
+gfx_device_gl = "0.14.4"
+gfx = "0.16.1"
+nalgebra = "0.13.1"
