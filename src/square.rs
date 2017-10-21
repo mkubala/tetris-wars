@@ -31,6 +31,7 @@ impl Tetromino {
 pub struct SquareBlock {
     offset: Vec2,
     trans: Transform,
+    curr_trans: Transform,
     sprite: Option<Texture<Resources>>
 }
 
@@ -39,6 +40,7 @@ impl SquareBlock {
         SquareBlock {
             offset,
             trans: Transform::new(),
+            curr_trans: Transform::new(),
             sprite: Option::None
         }
     }
@@ -76,6 +78,12 @@ impl Transform {
     }
 }
 
+impl PartialEq for Transform {
+    fn eq(&self, other: &Transform) -> bool {
+        &self.pos == &other.pos && &self.rot == &other.rot
+    }
+}
+
 pub trait Movable {
     fn mov(&mut self, pos: Vec2);
     fn mov_to(&mut self, pos: Vec2);
@@ -89,12 +97,33 @@ impl Movable for SquareBlock {
         self.trans.mov(pos);
     }
     
-    fn mov_to(&mut self, pos: Vec2) {}
+    fn mov_to(&mut self, pos: Vec2) {
+        self.trans.mov_to(pos);
+    }
+    
     fn rot(&mut self, r: f64) {
         self.trans.rot(r);
     }
-    fn rot_to(&mut self, r: f64) {}
-    fn update(&mut self, dt: f64) {}
+    
+    fn rot_to(&mut self, r: f64) {
+        self.trans.rot_to(r);
+    }
+    
+    fn update(&mut self, dt: f64) {
+        let pos_d = self.trans.pos - self.curr_trans.pos;
+        if (pos_d.abs().y >= 0.5) {
+            self.curr_trans.mov(pos_d / 5.0);
+        } else if (self.curr_trans.pos != self.trans.pos) {
+            self.curr_trans.mov_to(self.trans.pos);
+        }
+
+        let rot_d = self.trans.rot - self.curr_trans.rot;
+        if (rot_d.abs() >= 0.5) {
+            self.curr_trans.rot(rot_d / 5.0);
+        } else if (self.curr_trans.rot != self.trans.rot) {
+            self.curr_trans.rot_to(self.trans.rot);
+        }
+    }
 }
 
 impl Movable for Tetromino {
@@ -104,14 +133,27 @@ impl Movable for Tetromino {
         }
     }
     
-    fn mov_to(&mut self, pos: Vec2) {}
+    fn mov_to(&mut self, pos: Vec2) {
+        for block in &mut self.blocks {
+            block.mov_to(pos);
+        }
+    }
     fn rot(&mut self, r: f64) {
         for block in &mut self.blocks {
             block.rot(r);
         }
     }
-    fn rot_to(&mut self, r: f64) {}
-    fn update(&mut self, dt: f64) {}
+    fn rot_to(&mut self, r: f64) {
+        for block in &mut self.blocks {
+            block.rot_to(r);
+        }
+    }
+
+    fn update(&mut self, dt: f64) {
+        for block in &mut self.blocks {
+            block.update(dt);
+        }
+    }
 }
 
 pub trait Renderable {
@@ -120,9 +162,9 @@ pub trait Renderable {
 
 impl Renderable for SquareBlock {
     fn render(&self, g: &mut GfxGraphics<Resources, CommandBuffer>, view: math::Matrix2d) {
-        let t: Transform = self.trans;
+        let t: Transform = self.curr_trans;
         let o = self.offset;
-        let tile_size = 50.0;
+        let tile_size = 40.0;
         let square = rectangle::square(0.0, 0.0, tile_size);
         let transition = view.trans(t.pos.x, t.pos.y)
                              .rot_deg(t.rot)

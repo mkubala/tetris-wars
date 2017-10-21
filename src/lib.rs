@@ -13,8 +13,6 @@ type Vec2 = na::Vector2<f64>;
 
 struct Game {
     tetromino: Tetromino,
-    up_pressed: bool,
-    down_pressed: bool,
     scx: f64,
     scy: f64
 }
@@ -24,9 +22,7 @@ impl Game {
         Game {
             tetromino: Tetromino::new_s(),
             scx: 300.0,
-            scy: 300.0,
-            up_pressed: false,
-            down_pressed: false
+            scy: 300.0
         }
     }
 
@@ -46,27 +42,16 @@ impl Game {
     }
 
     fn on_update(&mut self, upd: &UpdateArgs) {
-        if self.up_pressed {
-            self.tetromino.mov(Vec2::new(0.0, -10.0));
-        }
-        if self.down_pressed {
-            self.tetromino.mov(Vec2::new(0.0, 10.0));
-        }
+        self.tetromino.update(upd.dt);
     }
 
     fn on_input<E: GenericEvent>(&mut self, e: &E) {
         if let Some(Button::Keyboard(key)) = e.press_args() {
             match key {
-                Key::Up => self.up_pressed = true,
-                Key::Down => self.down_pressed = true,
-                Key::Return => self.tetromino.rot(45.0),
-                _ => {}
-            }
-        };
-        if let Some(Button::Keyboard(key)) = e.release_args() {
-            match key {
-                Key::Up => self.up_pressed = false,
-                Key::Down => self.down_pressed = false,
+                Key::Up => self.tetromino.mov(Vec2::new(0.0, -40.0)),
+                Key::Down => self.tetromino.mov(Vec2::new(0.0, 40.0)),
+                Key::Right => self.tetromino.rot(90.0),
+                Key::Left => self.tetromino.rot(-90.0),
                 _ => {}
             }
         };
