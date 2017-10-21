@@ -22,7 +22,7 @@ struct Game {
 impl Game {
     fn new() -> Game {
         Game {
-            tetromino: Tetromino::new(),
+            tetromino: Tetromino::new_s(),
             scx: 300.0,
             scy: 300.0,
             up_pressed: false,
@@ -56,15 +56,14 @@ impl Game {
 
     fn on_input<E: GenericEvent>(&mut self, e: &E) {
         if let Some(Button::Keyboard(key)) = e.press_args() {
-            println!("Key pressed!");
             match key {
                 Key::Up => self.up_pressed = true,
                 Key::Down => self.down_pressed = true,
+                Key::Return => self.tetromino.rot(45.0),
                 _ => {}
             }
         };
         if let Some(Button::Keyboard(key)) = e.release_args() {
-            println!("Key released!");
             match key {
                 Key::Up => self.up_pressed = false,
                 Key::Down => self.down_pressed = false,
