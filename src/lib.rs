@@ -4,8 +4,15 @@ extern crate gfx_device_gl;
 extern crate gfx_graphics;
 extern crate gfx;
 
-mod square;
-use square::*;
+mod renderable;
+mod movable;
+use renderable::*;
+use movable:: *;
+
+mod square_block;
+
+mod tetromino;
+use tetromino::*;
 
 use piston_window::*;
 
@@ -13,7 +20,6 @@ mod type_aliases {
     pub type Vec2 = ::na::Vector2<f64>;
     pub type Vec3 = ::na::Vector3<f64>;
 }
-use type_aliases::*;
 
 mod transformations;
 
