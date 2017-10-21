@@ -3,9 +3,10 @@ use ::piston_window::*;
 use ::gfx_device_gl::{Resources, CommandBuffer};
 use ::gfx_graphics::GfxGraphics;
 
-use ::na::Vector2;
+use ::na::{Vector2, Vector3};
 
 type Vec2 = Vector2<f64>;
+type Vec3 = Vector3<f64>;
 
 pub struct Tetromino {
     pos: Vec2,
@@ -31,7 +32,6 @@ impl Tetromino {
 pub struct SquareBlock {
     offset: Vec2,
     trans: Transform,
-    curr_trans: Transform,
     sprite: Option<Texture<Resources>>
 }
 
@@ -40,7 +40,6 @@ impl SquareBlock {
         SquareBlock {
             offset,
             trans: Transform::new(),
-            curr_trans: Transform::new(),
             sprite: Option::None
         }
     }
@@ -49,103 +48,83 @@ impl SquareBlock {
 
 #[derive(Copy, Clone)]
 pub struct Transform {
-    pos: Vec2,
-    rot: f64
+    pos_rot: Vec3,
+    target: Vec3,
+    step: Vec3
 }
 
 impl Transform {
     pub fn new() -> Transform {
         Transform {
-            pos: Vec2::new(0.0, 0.0),
-            rot: 0.0
+            pos_rot: Vec3::zeros(),
+            target: Vec3::zeros(),
+            step: Vec3::zeros()
         }
     }
 
-    pub fn mov(&mut self, v: Vec2) {
-        self.pos = self.pos + v;
+    fn update_step(&mut self) {
+        self.step = (self.target - self.pos_rot) / 10.0;
+        println!("new step = {}", self.step);
     }
 
-    pub fn mov_to(&mut self, v: Vec2) {
-        self.pos = v;
-    }
-
-    pub fn rot(&mut self, d: f64) {
-        self.rot += d;
-    }
-
-    pub fn rot_to(&mut self, d: f64) {
-        self.rot = d;
-    }
-}
-
-impl PartialEq for Transform {
-    fn eq(&self, other: &Transform) -> bool {
-        &self.pos == &other.pos && &self.rot == &other.rot
-    }
 }
 
 pub trait Movable {
     fn mov(&mut self, pos: Vec2);
-    fn mov_to(&mut self, pos: Vec2);
     fn rot(&mut self, r: f64);
-    fn rot_to(&mut self, r: f64);
     fn update(&mut self, dt: f64);
 }
 
+impl Movable for Transform {
+    fn mov(&mut self, v: Vec2) {
+        let x: Vec3 = Vec3::new(v.x, v.y, 0.0);
+        self.target = self.target + x;
+        self.update_step();
+    }
+
+    fn rot(&mut self, d: f64) {
+        let mut x = Vec3::zeros();
+        x.z = d;
+        self.target = self.target + x;
+        self.update_step();
+    }
+
+    fn update(&mut self, dt: f64) {
+        if self.step != Vec3::zeros() && (self.pos_rot - self.target).abs() <= Vec3::new(1.0, 1.0, 1.0) {
+            self.step = Vec3::zeros();
+            self.pos_rot = self.target;
+        } else {
+            self.pos_rot = self.pos_rot + self.step;
+        }
+    }
+}
+
 impl Movable for SquareBlock {
+
     fn mov(&mut self, pos: Vec2) {
         self.trans.mov(pos);
-    }
-    
-    fn mov_to(&mut self, pos: Vec2) {
-        self.trans.mov_to(pos);
     }
     
     fn rot(&mut self, r: f64) {
         self.trans.rot(r);
     }
     
-    fn rot_to(&mut self, r: f64) {
-        self.trans.rot_to(r);
-    }
-    
     fn update(&mut self, dt: f64) {
-        let pos_d = self.trans.pos - self.curr_trans.pos;
-        if (pos_d.abs().y >= 0.5) {
-            self.curr_trans.mov(pos_d / 5.0);
-        } else if (self.curr_trans.pos != self.trans.pos) {
-            self.curr_trans.mov_to(self.trans.pos);
-        }
-
-        let rot_d = self.trans.rot - self.curr_trans.rot;
-        if (rot_d.abs() >= 0.5) {
-            self.curr_trans.rot(rot_d / 5.0);
-        } else if (self.curr_trans.rot != self.trans.rot) {
-            self.curr_trans.rot_to(self.trans.rot);
-        }
+        self.trans.update(dt);
     }
 }
 
 impl Movable for Tetromino {
+
     fn mov(&mut self, pos: Vec2) {
         for block in &mut self.blocks {
             block.mov(pos);
         }
     }
-    
-    fn mov_to(&mut self, pos: Vec2) {
-        for block in &mut self.blocks {
-            block.mov_to(pos);
-        }
-    }
+
     fn rot(&mut self, r: f64) {
         for block in &mut self.blocks {
             block.rot(r);
-        }
-    }
-    fn rot_to(&mut self, r: f64) {
-        for block in &mut self.blocks {
-            block.rot_to(r);
         }
     }
 
@@ -162,12 +141,12 @@ pub trait Renderable {
 
 impl Renderable for SquareBlock {
     fn render(&self, g: &mut GfxGraphics<Resources, CommandBuffer>, view: math::Matrix2d) {
-        let t: Transform = self.curr_trans;
+        let t: Transform = self.trans;
         let o = self.offset;
         let tile_size = 40.0;
         let square = rectangle::square(0.0, 0.0, tile_size);
-        let transition = view.trans(t.pos.x, t.pos.y)
-                             .rot_deg(t.rot)
+        let transition = view.trans(t.pos_rot.x, t.pos_rot.y)
+                             .rot_deg(t.pos_rot.z)
                              .trans(o.x, o.y);
         rectangle(
             [1.0, 0.0, 0.0, 1.0], 
