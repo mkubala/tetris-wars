@@ -9,7 +9,13 @@ use square::*;
 
 use piston_window::*;
 
-type Vec2 = na::Vector2<f64>;
+mod type_aliases {
+    pub type Vec2 = ::na::Vector2<f64>;
+    pub type Vec3 = ::na::Vector3<f64>;
+}
+use type_aliases::*;
+
+mod transformations;
 
 struct Game {
     tetromino: Tetromino,

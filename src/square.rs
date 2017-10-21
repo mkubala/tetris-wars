@@ -5,8 +5,7 @@ use ::gfx_graphics::GfxGraphics;
 
 use ::na::{Vector2, Vector3};
 
-type Vec2 = Vector2<f64>;
-type Vec3 = Vector3<f64>;
+use type_aliases::*;
 
 pub struct Tetromino {
     pos: Vec2,
