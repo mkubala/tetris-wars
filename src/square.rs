@@ -7,6 +7,8 @@ use ::na::{Vector2, Vector3};
 
 use type_aliases::*;
 
+use transformations::*;
+
 pub struct Tetromino {
     pos: Vec2,
     blocks: [SquareBlock; 4]
@@ -30,7 +32,7 @@ impl Tetromino {
 
 pub struct SquareBlock {
     offset: Vec2,
-    trans: Transform,
+    trans: Transformation,
     sprite: Option<Texture<Resources>>
 }
 
@@ -38,74 +40,41 @@ impl SquareBlock {
     fn new(offset: Vec2) -> SquareBlock {
         SquareBlock {
             offset,
-            trans: Transform::new(),
+            trans: Transformation::empty(),
             sprite: Option::None
         }
     }
 
-}
-
-#[derive(Copy, Clone)]
-pub struct Transform {
-    pos_rot: Vec3,
-    target: Vec3,
-    step: Vec3
-}
-
-impl Transform {
-    pub fn new() -> Transform {
-        Transform {
-            pos_rot: Vec3::zeros(),
-            target: Vec3::zeros(),
-            step: Vec3::zeros()
-        }
-    }
-
-    fn update_step(&mut self) {
-        self.step = (self.target - self.pos_rot) / 10.0;
-        println!("new step = {}", self.step);
+    fn transform(&mut self, transformation: Transformation) {
+        self.trans = self.trans + transformation;
     }
 
 }
 
 pub trait Movable {
-    fn mov(&mut self, pos: Vec2);
-    fn rot(&mut self, r: f64);
+    fn mov_up(&mut self, dy: f64);
+    fn mov_down(&mut self, dy: f64);
+    fn rot_left(&mut self);
+    fn rot_right(&mut self);
     fn update(&mut self, dt: f64);
-}
-
-impl Movable for Transform {
-    fn mov(&mut self, v: Vec2) {
-        let x: Vec3 = Vec3::new(v.x, v.y, 0.0);
-        self.target = self.target + x;
-        self.update_step();
-    }
-
-    fn rot(&mut self, d: f64) {
-        let mut x = Vec3::zeros();
-        x.z = d;
-        self.target = self.target + x;
-        self.update_step();
-    }
-
-    fn update(&mut self, dt: f64) {
-        if self.step != Vec3::zeros() && (self.pos_rot - self.target).abs() <= Vec3::new(1.0, 1.0, 1.0) {
-            self.step = Vec3::zeros();
-            self.pos_rot = self.target;
-        } else {
-            self.pos_rot = self.pos_rot + self.step;
-        }
-    }
 }
 
 impl Movable for SquareBlock {
 
-    fn mov(&mut self, pos: Vec2) {
-        self.trans.mov(pos);
+    fn mov_up(&mut self, dy: f64) {
+        self.transform(Transformation::move_up(dy));
     }
-    
-    fn rot(&mut self, r: f64) {
-        self.trans.rot(r);
+
+    fn mov_down(&mut self, dy: f64) {
+        self.transform(Transformation::move_down(dy));
+    }
+
+    fn rot_left(&mut self) {
+        self.transform(Transformation::rot_left(90.0));
+    }
+
+    fn rot_right(&mut self) {
+        self.transform(Transformation::rot_right(90.0));
     }
     
     fn update(&mut self, dt: f64) {
@@ -115,15 +84,27 @@ impl Movable for SquareBlock {
 
 impl Movable for Tetromino {
 
-    fn mov(&mut self, pos: Vec2) {
+    fn mov_up(&mut self, dy: f64) {
         for block in &mut self.blocks {
-            block.mov(pos);
+            block.mov_up(dy);
+        }
+    }
+    
+    fn mov_down(&mut self, dy: f64) {
+        for block in &mut self.blocks {
+            block.mov_down(dy);
         }
     }
 
-    fn rot(&mut self, r: f64) {
+    fn rot_left(&mut self) {
         for block in &mut self.blocks {
-            block.rot(r);
+            block.rot_left();
+        }
+    }
+
+    fn rot_right(&mut self) {
+        for block in &mut self.blocks {
+            block.rot_right();
         }
     }
 
@@ -140,12 +121,12 @@ pub trait Renderable {
 
 impl Renderable for SquareBlock {
     fn render(&self, g: &mut GfxGraphics<Resources, CommandBuffer>, view: math::Matrix2d) {
-        let t: Transform = self.trans;
+        let t: Transformation = self.trans;
         let o = self.offset;
         let tile_size = 40.0;
         let square = rectangle::square(0.0, 0.0, tile_size);
-        let transition = view.trans(t.pos_rot.x, t.pos_rot.y)
-                             .rot_deg(t.pos_rot.z)
+        let transition = view.trans(t.x(), t.y())
+                             .rot_deg(t.rot())
                              .trans(o.x, o.y);
         rectangle(
             [1.0, 0.0, 0.0, 1.0], 

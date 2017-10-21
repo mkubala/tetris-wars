@@ -54,10 +54,10 @@ impl Game {
     fn on_input<E: GenericEvent>(&mut self, e: &E) {
         if let Some(Button::Keyboard(key)) = e.press_args() {
             match key {
-                Key::Up => self.tetromino.mov(Vec2::new(0.0, -40.0)),
-                Key::Down => self.tetromino.mov(Vec2::new(0.0, 40.0)),
-                Key::Right => self.tetromino.rot(90.0),
-                Key::Left => self.tetromino.rot(-90.0),
+                Key::Up => self.tetromino.mov_up(40.0),
+                Key::Down => self.tetromino.mov_down(40.0),
+                Key::Right => self.tetromino.rot_right(),
+                Key::Left => self.tetromino.rot_left(),
                 _ => {}
             }
         };
