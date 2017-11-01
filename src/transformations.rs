@@ -16,36 +16,28 @@ impl Transformation {
         }
     }
 
-    pub fn move_up(dy: f64) -> Transformation {
+    pub fn new(to: Vec3) -> Transformation {
         Transformation {
-            to: Vec3::new(0.0, -dy, 0.0),
-            step: Vec3::new(0.0, -1.0, 0.0),
+            to,
+            step: to / 5.0,
             state: Vec3::zeros()
         }
+    }
+
+    pub fn move_up(dy: f64) -> Transformation {
+        Transformation::new(Vec3::new(0.0, -dy, 0.0))
     }
 
     pub fn move_down(dy: f64) -> Transformation {
-        Transformation {
-            to: Vec3::new(0.0, dy, 0.0),
-            step: Vec3::new(0.0, 1.0, 0.0),
-            state: Vec3::zeros()
-        }
+        Transformation::new(Vec3::new(0.0, dy, 0.0))
     }
 
     pub fn rot_left(d: f64) -> Transformation {
-        Transformation {
-            to: Vec3::new(0.0, 0.0, d),
-            step: Vec3::new(0.0, 0.0, 1.0),
-            state: Vec3::zeros()
-        }
+        Transformation::new(Vec3::new(0.0, 0.0, -d))
     }
 
     pub fn rot_right(d: f64) -> Transformation {
-        Transformation {
-            to: Vec3::new(0.0, 0.0, -d),
-            step: Vec3::new(0.0, 0.0, -1.0),
-            state: Vec3::zeros()
-        }
+        Transformation::new(Vec3::new(0.0, 0.0, d))            
     }
 
     pub fn x(&self) -> f64 {
@@ -61,6 +53,7 @@ impl Transformation {
     }
 
     pub fn update(&mut self, dt: f64) {
+        // TODO use .approx_eq
         if self.step != Vec3::zeros() && (self.state - self.to).abs() <= Vec3::new(1.0, 1.0, 1.0) {
             self.step = Vec3::zeros();
             self.state = self.to;

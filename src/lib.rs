@@ -17,11 +17,15 @@ use tetromino::*;
 use piston_window::*;
 
 mod type_aliases {
-    pub type Vec2 = ::na::Vector2<f64>;
-    pub type Vec3 = ::na::Vector3<f64>;
+    pub use ::na::*;
+    pub type Vec2 = Vector2<f64>;
+    pub type Vec3 = Vector3<f64>;
+    pub type Point = Point2<f64>;
 }
 
 mod transformations;
+
+const BLOCK_SIZE: f64 = 40.0;
 
 struct Game {
     tetromino: Tetromino,
@@ -32,9 +36,9 @@ struct Game {
 impl Game {
     fn new() -> Game {
         Game {
-            tetromino: Tetromino::new_s(),
-            scx: 300.0,
-            scy: 300.0
+            tetromino: Tetromino::new(TetrominoShape::L, Direction::LeftToRight),
+            scx: BLOCK_SIZE * 7.5,
+            scy: BLOCK_SIZE * 7.5
         }
     }
 
@@ -60,8 +64,8 @@ impl Game {
     fn on_input<E: GenericEvent>(&mut self, e: &E) {
         if let Some(Button::Keyboard(key)) = e.press_args() {
             match key {
-                Key::Up => self.tetromino.mov_up(40.0),
-                Key::Down => self.tetromino.mov_down(40.0),
+                Key::Up => self.tetromino.mov_up(),
+                Key::Down => self.tetromino.mov_down(),
                 Key::Right => self.tetromino.rot_right(),
                 Key::Left => self.tetromino.rot_left(),
                 _ => {}
