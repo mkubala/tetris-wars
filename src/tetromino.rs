@@ -161,7 +161,7 @@ impl Movable for TetrominoState {
         // 1  0
         let rot = ::na::Matrix2::new(0.0, -1.0, 1.0, 0.0);
         let t = self.rotation_point;
-        [
+        self.blocks_pos = [
             rot * (self.blocks_pos[0] - t) + t,
             rot * (self.blocks_pos[1] - t) + t,
             rot * (self.blocks_pos[2] - t) + t,
