@@ -1,5 +1,8 @@
 use super::type_aliases::*;
 
+extern crate approx;
+use self::approx::ApproxEq;
+
 #[derive(Copy, Clone)]
 pub struct Transformation {
     to: Vec3,
@@ -53,8 +56,9 @@ impl Transformation {
     }
 
     pub fn update(&mut self, dt: f64) {
-        // TODO use .approx_eq
-        if self.step != Vec3::zeros() && (self.state - self.to).abs() <= Vec3::new(1.0, 1.0, 1.0) {
+        let eps = <Vec3 as ApproxEq>::default_epsilon();
+        let max_rel = <Vec3 as ApproxEq>::default_max_relative();
+        if self.step != Vec3::zeros() && self.state.relative_eq(&self.to, eps, max_rel) {
             self.step = Vec3::zeros();
             self.state = self.to;
         } else {
