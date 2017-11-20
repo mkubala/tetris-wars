@@ -1,5 +1,6 @@
 extern crate piston_window;
 extern crate nalgebra as na;
+extern crate ncollide as nc;
 extern crate gfx_device_gl;
 extern crate gfx_graphics;
 extern crate gfx;
@@ -27,18 +28,25 @@ mod transformations;
 
 const BLOCK_SIZE: f64 = 40.0;
 
+use nc::shape::Cuboid;
+use nc::shape::Cuboid2;
+    
+use nc::bounding_volume::HasBoundingVolume;
+use nc::bounding_volume::BoundingVolume;
+use nc::bounding_volume::AABB;
+
+use type_aliases::*;
+
 struct Game {
     tetromino: Tetromino,
-    scx: f64,
-    scy: f64
+    board_cuboid: Cuboid2<f64>
 }
 
 impl Game {
     fn new() -> Game {
         Game {
-            tetromino: Tetromino::new(TetrominoShape::L, Direction::LeftToRight),
-            scx: BLOCK_SIZE * 7.5,
-            scy: BLOCK_SIZE * 7.5
+            tetromino: Tetromino::new(TetrominoShape::T, Direction::LeftToRight),
+            board_cuboid: Cuboid::new(Vec2::new(200.0, 200.0))
         }
     }
 
@@ -48,12 +56,48 @@ impl Game {
 
     fn on_draw<E: GenericEvent>(&mut self, e: &E, w: &mut PistonWindow) {
         let size = w.size();
-        self.scx = (size.width / 2) as f64;
-        self.scy = (size.height / 2) as f64;
         w.draw_2d(e, |c, g| {
             clear([0.0, 0.0, 0.0, 1.0], g);
-            let center = c.transform.trans(self.scx, self.scy);
-            self.tetromino.render(g, center);
+
+            // BOARD
+            let board_bv: AABB<Point2<f64>> = self.board_cuboid.bounding_volume(
+                &::na::Isometry2::new(
+                    Vec2::new(200.0, 240.0), 
+                    ::na::zero()
+                )
+            );
+            let board = [
+                board_bv.mins().x, 
+                board_bv.mins().y, 
+                board_bv.half_extents().x * 2.0, 
+                board_bv.half_extents().y * 2.0
+            ];
+            rectangle(
+                [0.1, 0.1, 0.1, 1.0],
+                board,
+                c.transform,
+                g
+            );
+
+            // SHAPE
+            let state = &self.tetromino.state;
+            let shape_bv: AABB<Point2<f64>> = state.shape.bounding_volume(&state.isometry);
+            let shape = [
+                shape_bv.mins().x, 
+                shape_bv.mins().y, 
+                shape_bv.half_extents().x * 2.0, 
+                shape_bv.half_extents().y * 2.0
+            ];
+
+            rectangle(
+                [0.1, 0.3, 0.1, 0.5],
+                shape,
+                c.transform,
+                g
+            );
+
+            let r_point = self.tetromino.state.rotation_point;
+            self.tetromino.render(g, c.transform.trans(300.0 - r_point.x, 300.0 - r_point.y));
         });
     }
 
@@ -63,6 +107,24 @@ impl Game {
 
     fn on_input<E: GenericEvent>(&mut self, e: &E) {
         if let Some(Button::Keyboard(key)) = e.press_args() {
+            let state = &self.tetromino.state;        
+            let board_bv: AABB<Point2<f64>> = self.board_cuboid.bounding_volume(
+                &::na::Isometry2::new(
+                    Vec2::new(200.0, 240.0), 
+                    ::na::zero()
+                )
+            );
+            let loosened_board_bv = board_bv.loosened(BLOCK_SIZE);
+            let shape_bv: AABB<Point2<f64>> = state.shape.bounding_volume(&state.isometry);
+
+            let contains = loosened_board_bv.contains(&shape_bv);
+
+            if contains {
+                println!("Inside ({}, {} , {}, {})", board_bv.mins(), board_bv.maxs(), shape_bv.mins().y.round(), shape_bv.maxs().y.round());
+            } else {
+                println!("Outside ({}, {} , {}, {})", board_bv.mins(), board_bv.maxs(), shape_bv.mins().y.round(), shape_bv.maxs().y.round());
+            }
+
             match key {
                 Key::Up => self.tetromino.mov_up(),
                 Key::Down => self.tetromino.mov_down(),
@@ -70,6 +132,7 @@ impl Game {
                 Key::Left => self.tetromino.rot_left(),
                 _ => {}
             }
+
         };
     }
 }

@@ -58,7 +58,7 @@ impl Renderable for SquareBlock {
         let square = rectangle::square(0.0, 0.0, ::BLOCK_SIZE);
         let transition = view.trans(t.x(), t.y())
                              .rot_deg(t.rot())
-                             .trans(local.x * ::BLOCK_SIZE, local.y * ::BLOCK_SIZE);
+                             .trans(local.x, local.y);
         rectangle(
             [1.0, 0.0, 0.0, 1.0], 
             square, 
