@@ -107,34 +107,52 @@ impl Game {
 
     fn on_input<E: GenericEvent>(&mut self, e: &E) {
         if let Some(Button::Keyboard(key)) = e.press_args() {
-            let state = &self.tetromino.state;        
-            let board_bv: AABB<Point2<f64>> = self.board_cuboid.bounding_volume(
-                &::na::Isometry2::new(
-                    Vec2::new(200.0, 240.0), 
-                    ::na::zero()
-                )
-            );
-            let loosened_board_bv = board_bv.loosened(BLOCK_SIZE);
-            let shape_bv: AABB<Point2<f64>> = state.shape.bounding_volume(&state.isometry);
-
-            let contains = loosened_board_bv.contains(&shape_bv);
-
-            if contains {
-                println!("Inside ({}, {} , {}, {})", board_bv.mins(), board_bv.maxs(), shape_bv.mins().y.round(), shape_bv.maxs().y.round());
-            } else {
-                println!("Outside ({}, {} , {}, {})", board_bv.mins(), board_bv.maxs(), shape_bv.mins().y.round(), shape_bv.maxs().y.round());
-            }
-
+            let tetromino = &mut self.tetromino;
             match key {
-                Key::Up => self.tetromino.mov_up(),
-                Key::Down => self.tetromino.mov_down(),
-                Key::Right => self.tetromino.rot_right(),
-                Key::Left => self.tetromino.rot_left(),
+                Key::Up => tetromino.mov_up(),
+                Key::Down => tetromino.mov_down(),
+                Key::Right => tetromino.rot_right(),
+                Key::Left => tetromino.rot_left(),
                 _ => {}
             }
 
+            match Game::check_board_collision(tetromino, &self.board_cuboid) {
+                Collision::None => {},
+                Collision::Top => tetromino.mov_down(),
+                Collision::Bottom => tetromino.mov_up()
+            }
         };
     }
+
+    fn check_board_collision(tetromino: &Tetromino, board_cuboid: &Cuboid2<f64>) -> Collision {
+        let board_bv: AABB<Point2<f64>> = board_cuboid.bounding_volume(
+            &::na::Isometry2::new(
+                Vec2::new(200.0, 240.0), 
+                ::na::zero()
+            )
+        );
+        let loosened_board_bv = &board_bv.loosened(BLOCK_SIZE);
+        let shape_bv: AABB<Point2<f64>> = tetromino.state.shape.bounding_volume(&tetromino.state.isometry);
+
+        let contains = loosened_board_bv.contains(&shape_bv);
+
+        if contains {
+            Collision::None
+        } else {
+            if shape_bv.mins().y.round() < board_bv.mins().y.round() {
+                Collision::Top
+            } else {
+                Collision::Bottom
+            }
+        }
+    }
+
+}
+
+enum Collision {
+    None,
+    Top,
+    Bottom
 }
 
 pub fn run() {
