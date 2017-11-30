@@ -9,8 +9,8 @@ use renderable::Renderable;
 
 pub struct SquareBlock {
     local_coords: Vec2,
-    trans: Transformation,
-    sprite: Option<Texture<Resources>>
+    trans: Transformation//,
+    // sprite: Option<Texture<Resources>>
 }
 
 impl SquareBlock {
@@ -18,7 +18,7 @@ impl SquareBlock {
         SquareBlock {
             local_coords,
             trans: Transformation::empty(),
-            sprite: Option::None
+            // sprite: Option::None
         }
     }
 
@@ -29,25 +29,13 @@ impl SquareBlock {
 }
 
 impl Movable for SquareBlock {
-
-    fn mov_up(&mut self) {
-        self.transform(Transformation::move_up(::BLOCK_SIZE));
-    }
-
-    fn mov_down(&mut self) {
-        self.transform(Transformation::move_down(::BLOCK_SIZE));
-    }
-
-    fn rot_left(&mut self) {
-        self.transform(Transformation::rot_left(90.0));
-    }
-
-    fn rot_right(&mut self) {
-        self.transform(Transformation::rot_right(90.0));
-    }
     
     fn update(&mut self, dt: f64) {
         self.trans.update(dt);
+    }
+
+    fn apply(&mut self, iso: Isometry2<f64>) {
+        self.transform(Transformation::new(iso));
     }
 }
 
@@ -57,7 +45,7 @@ impl Renderable for SquareBlock {
         let local = self.local_coords;
         let square = rectangle::square(0.0, 0.0, ::BLOCK_SIZE);
         let transition = view.trans(t.x(), t.y())
-                             .rot_deg(t.rot())
+                             .rot_rad(t.rot_rad())
                              .trans(local.x, local.y);
         rectangle(
             [1.0, 0.0, 0.0, 1.0], 

@@ -10,6 +10,8 @@ mod movable;
 use renderable::*;
 use movable:: *;
 
+mod util;
+
 mod square_block;
 
 mod tetromino;
@@ -20,7 +22,6 @@ use piston_window::*;
 mod type_aliases {
     pub use ::na::*;
     pub type Vec2 = Vector2<f64>;
-    pub type Vec3 = Vector3<f64>;
     pub type Point = Point2<f64>;
 }
 
@@ -34,6 +35,8 @@ use nc::shape::Cuboid2;
 use nc::bounding_volume::HasBoundingVolume;
 use nc::bounding_volume::BoundingVolume;
 use nc::bounding_volume::AABB;
+
+use std::f64::consts::FRAC_PI_2;
 
 use type_aliases::*;
 
@@ -50,12 +53,11 @@ impl Game {
         }
     }
 
-    fn on_load(&mut self, w: &PistonWindow) {
+    fn on_load(&mut self, _w: &PistonWindow) {
         // TODO load and assign textures etc.
     }
 
     fn on_draw<E: GenericEvent>(&mut self, e: &E, w: &mut PistonWindow) {
-        let size = w.size();
         w.draw_2d(e, |c, g| {
             clear([0.0, 0.0, 0.0, 1.0], g);
 
@@ -108,23 +110,25 @@ impl Game {
     fn on_input<E: GenericEvent>(&mut self, e: &E) {
         if let Some(Button::Keyboard(key)) = e.press_args() {
             let tetromino = &mut self.tetromino;
-            match key {
-                Key::Up => tetromino.mov_up(),
-                Key::Down => tetromino.mov_down(),
-                Key::Right => tetromino.rot_right(),
-                Key::Left => tetromino.rot_left(),
-                _ => {}
-            }
+            let transformation: Isometry2<f64> = match key {
+                Key::Up     => Isometry2::new(Vec2::new(0.0, -BLOCK_SIZE), zero()),
+                Key::Down   => Isometry2::new(Vec2::new(0.0,  BLOCK_SIZE), zero()),
+                Key::Right  => Isometry2::new(zero(),                      FRAC_PI_2),
+                Key::Left   => Isometry2::new(zero(),                     -FRAC_PI_2),
+                _           => Isometry2::identity()
+            };
 
-            match Game::check_board_collision(tetromino, &self.board_cuboid) {
-                Collision::None => {},
-                Collision::Top => tetromino.mov_down(),
-                Collision::Bottom => tetromino.mov_up()
-            }
+            let correction: Isometry2<f64> = match Game::check_board_collision(tetromino, &self.board_cuboid, &transformation) {
+                Collision::None     => Isometry2::identity(),
+                Collision::Top      => Isometry2::new(Vec2::new(0.0,  BLOCK_SIZE), zero()),
+                Collision::Bottom   => Isometry2::new(Vec2::new(0.0, -BLOCK_SIZE), zero()),
+            };
+
+            tetromino.apply(util::isometry::add_isometries(&transformation, &correction));
         };
     }
 
-    fn check_board_collision(tetromino: &Tetromino, board_cuboid: &Cuboid2<f64>) -> Collision {
+    fn check_board_collision(tetromino: &Tetromino, board_cuboid: &Cuboid2<f64>, transformation: &Isometry2<f64>) -> Collision {
         let board_bv: AABB<Point2<f64>> = board_cuboid.bounding_volume(
             &::na::Isometry2::new(
                 Vec2::new(200.0, 240.0), 
@@ -132,7 +136,7 @@ impl Game {
             )
         );
         let loosened_board_bv = &board_bv.loosened(BLOCK_SIZE);
-        let shape_bv: AABB<Point2<f64>> = tetromino.state.shape.bounding_volume(&tetromino.state.isometry);
+        let shape_bv: AABB<Point2<f64>> = tetromino.state.shape.bounding_volume(&util::isometry::add_isometries(&tetromino.state.isometry, &transformation));
 
         let contains = loosened_board_bv.contains(&shape_bv);
 
