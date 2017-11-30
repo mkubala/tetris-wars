@@ -16,8 +16,6 @@ use ::na::Isometry2;
 use ::nc::shape::{ Cuboid, Compound2 };
 use ::nc::shape::ShapeHandle;
 
-use std::f64::consts::FRAC_PI_2;
-
 use BLOCK_SIZE;
 
 pub enum Direction {
@@ -94,7 +92,7 @@ impl Tetromino {
 
     // TODO We will either flip or transpose tetromino coords, depending on the direction 
     // (left to right = transpose; right to left = rotate)
-    pub fn new(shape: TetrominoShape, dir: Direction) -> Tetromino {
+    pub fn new(shape: TetrominoShape, _dir: Direction) -> Tetromino {
         let (points, state) = shape.initial_state();
         let blocks: Vec<SquareBlock> = points.iter()
             .map(|point| {
@@ -111,35 +109,7 @@ impl Tetromino {
 
 impl Movable for Tetromino {
 
-    fn mov_up(&mut self) {
-        self.state.mov_up();
-        for block in &mut self.blocks {
-            block.mov_up();
-        }
-    }
-    
-    fn mov_down(&mut self) {
-        self.state.mov_down();
-        for block in &mut self.blocks {
-            block.mov_down();
-        }
-    }
-
-    fn rot_left(&mut self) {
-        self.state.rot_left();
-        for block in &mut self.blocks {
-            block.rot_left();
-        }
-    }
-
-    fn rot_right(&mut self) {
-        self.state.rot_right();
-        for block in &mut self.blocks {
-            block.rot_right();
-        }
-    }
-
-    fn update(&mut self, dt: f64) {
+     fn update(&mut self, dt: f64) {
         for block in &mut self.blocks {
             block.update(dt);
         }
@@ -155,31 +125,7 @@ impl Movable for Tetromino {
 
 impl Movable for TetrominoState {
 
-    fn mov_up(&mut self) {
-        self.apply(Isometry2::new(Vec2::new(0.0, -BLOCK_SIZE), zero()));
-    }
-    
-    fn mov_down(&mut self) {
-        self.apply(Isometry2::new(Vec2::new(0.0, BLOCK_SIZE), zero()));
-    }
-
-    fn rot_left(&mut self) {
-        let iso = Isometry2::new(
-                zero(), 
-                -FRAC_PI_2
-            );
-        self.apply(iso);
-    }
-
-    fn rot_right(&mut self) {
-        let iso = Isometry2::new(
-                zero(), 
-                FRAC_PI_2
-            );
-        self.apply(iso);
-    }
-
-    fn update(&mut self, dt: f64) {}
+    fn update(&mut self, _dt: f64) {}
 
     fn apply(&mut self, iso: Isometry2<f64>) {
         self.isometry = add_isometries(&self.isometry, &iso);

@@ -7,8 +7,6 @@ use transformations::Transformation;
 use movable::Movable;
 use renderable::Renderable;
 
-use std::f64::consts::FRAC_PI_2;
-
 pub struct SquareBlock {
     local_coords: Vec2,
     trans: Transformation//,
@@ -31,28 +29,14 @@ impl SquareBlock {
 }
 
 impl Movable for SquareBlock {
-
-    fn mov_up(&mut self) {
-        self.transform(Transformation::move_up(::BLOCK_SIZE));
-    }
-
-    fn mov_down(&mut self) {
-        self.transform(Transformation::move_down(::BLOCK_SIZE));
-    }
-
-    fn rot_left(&mut self) {
-        self.transform(Transformation::rot_left(FRAC_PI_2));
-    }
-
-    fn rot_right(&mut self) {
-        self.transform(Transformation::rot_right(FRAC_PI_2));
-    }
     
     fn update(&mut self, dt: f64) {
         self.trans.update(dt);
     }
 
-    fn apply(&mut self, iso: Isometry2<f64>) {}
+    fn apply(&mut self, iso: Isometry2<f64>) {
+        self.transform(Transformation::new(iso));
+    }
 }
 
 impl Renderable for SquareBlock {
@@ -61,7 +45,7 @@ impl Renderable for SquareBlock {
         let local = self.local_coords;
         let square = rectangle::square(0.0, 0.0, ::BLOCK_SIZE);
         let transition = view.trans(t.x(), t.y())
-                             .rot_rad(t.rot())
+                             .rot_rad(t.rot_rad())
                              .trans(local.x, local.y);
         rectangle(
             [1.0, 0.0, 0.0, 1.0], 

@@ -31,22 +31,6 @@ impl Transformation {
         }
     }
 
-    pub fn move_up(dy: f64) -> Transformation {
-        Transformation::new(Isometry2::new(Vec2::new(0.0, -dy), ::na::zero()))
-    }
-
-    pub fn move_down(dy: f64) -> Transformation {
-        Transformation::new(Isometry2::new(Vec2::new(0.0, dy), ::na::zero()))
-    }
-
-    pub fn rot_left(d: f64) -> Transformation {
-        Transformation::new(Isometry2::new(::na::zero(), -d))
-    }
-
-    pub fn rot_right(d: f64) -> Transformation {
-        Transformation::new(Isometry2::new(::na::zero(), d))
-    }
-
     pub fn x(&self) -> f64 {
         self.state.translation.vector.x
     }
@@ -55,12 +39,12 @@ impl Transformation {
         self.state.translation.vector.y
     }
 
-    pub fn rot(&self) -> f64 {
+    pub fn rot_rad(&self) -> f64 {
         self.state.rotation.angle()
     }
 
     // TODO take dt into account
-    pub fn update(&mut self, dt: f64) {
+    pub fn update(&mut self, _dt: f64) {
         if self.step != Isometry2::identity() {
             let rotation_is_finished: bool = {
                 let rot_diff = (self.state.rotation.angle() - self.to.rotation.angle()).abs();
