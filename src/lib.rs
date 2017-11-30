@@ -10,6 +10,8 @@ mod movable;
 use renderable::*;
 use movable:: *;
 
+mod util;
+
 mod square_block;
 
 mod tetromino;

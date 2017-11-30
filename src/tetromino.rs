@@ -6,10 +6,13 @@ use ::gfx_graphics::GfxGraphics;
 use type_aliases::*;
 
 use square_block::*;
+use ::util::isometry::*;
 
 use renderable::Renderable;
 use movable::Movable;
 
+use ::na::zero;
+use ::na::Isometry2;
 use ::nc::shape::{ Cuboid, Compound2 };
 use ::nc::shape::ShapeHandle;
 
@@ -59,7 +62,7 @@ impl TetrominoShape {
                 .map(|p| {
                     let transition = Vec2::new(p.x * BLOCK_SIZE, p.y * BLOCK_SIZE) - Vec2::new(rotation_point.x, rotation_point.y); // - Vec2::new(0.5 * BLOCK_SIZE, 0.5 * BLOCK_SIZE);
                     (
-                        Isometry2::new(transition, ::na::zero()), 
+                        Isometry2::new(transition, zero()), 
                         cuboid_handle.clone()
                     )
                 })
@@ -67,7 +70,7 @@ impl TetrominoShape {
         );
         let state = TetrominoState {
             shape: compound_shape,
-            isometry: Isometry2::new(Vec2::new(300.0 - rotation_point.x, 300.0 - rotation_point.y), ::na::zero()),
+            isometry: Isometry2::new(Vec2::new(300.0 - rotation_point.x, 300.0 - rotation_point.y), zero()),
             rotation_point
         };
         (blocks_pos, state)
@@ -141,35 +144,46 @@ impl Movable for Tetromino {
             block.update(dt);
         }
     }
+
+    fn apply(&mut self, iso: Isometry2<f64>) {
+        self.state.apply(iso);
+        for block in &mut self.blocks {
+            block.apply(iso)
+        }
+    }
 }
 
 impl Movable for TetrominoState {
 
     fn mov_up(&mut self) {
-        self.isometry.append_translation_mut(&::na::Translation2::new(0.0, -BLOCK_SIZE));
+        self.apply(Isometry2::new(Vec2::new(0.0, -BLOCK_SIZE), zero()));
     }
     
     fn mov_down(&mut self) {
-        self.isometry.append_translation_mut(&::na::Translation2::new(0.0, BLOCK_SIZE));
+        self.apply(Isometry2::new(Vec2::new(0.0, BLOCK_SIZE), zero()));
     }
 
     fn rot_left(&mut self) {
-        let p = Point::from_coordinates(self.isometry.translation.vector.clone());
-        self.isometry.append_rotation_wrt_point_mut(
-            &::na::UnitComplex::new(-FRAC_PI_2), 
-            &p
-        );
+        let iso = Isometry2::new(
+                zero(), 
+                -FRAC_PI_2
+            );
+        self.apply(iso);
     }
 
     fn rot_right(&mut self) {
-        let p = Point::from_coordinates(self.isometry.translation.vector.clone());
-        self.isometry.append_rotation_wrt_point_mut(
-            &::na::UnitComplex::new(FRAC_PI_2), 
-            &p
-        );
+        let iso = Isometry2::new(
+                zero(), 
+                FRAC_PI_2
+            );
+        self.apply(iso);
     }
 
     fn update(&mut self, dt: f64) {}
+
+    fn apply(&mut self, iso: Isometry2<f64>) {
+        self.isometry = add_isometries(&self.isometry, &iso);
+    }
 }
 
 impl Renderable for Tetromino {
